@@ -6,19 +6,6 @@ import plotly.graph_objects as go
 # 1. Configuration de la page
 st.set_page_config(page_title="Tableau de Bord PEA", layout="wide")
 
-# --- BLOC AJOUTÉ : BANDEAU VERT CACA D'OIE EN HAUT ---
-st.markdown(
-    """
-    <div style="background-color: #6B6B2F; padding: 20px; border-radius: 5px; margin-bottom: 25px; text-align: center;">
-        <h1 style="color: white; margin: 0; font-family: sans-serif;">📈 ESPACE D'ANALYSE PEA</h1>
-    </div>
-    """, 
-    unsafe_allow_html=True
-)
-
-st.title("Mon Tableau de Bord PEA Professionnel")
-st.write("Sélectionnez une action pour analyser sa santé financière, sa valorisation et ses graphiques de tendance.")
-
 # Liste complète des 120 actions du SBF 120
 liste_actions = [
     "AC.PA", "ACA.PA", "AI.PA", "AIR.PA", "ALD.PA", "ALO.PA", "ALT.PA", "AMUN.PA", "ATE.PA",
@@ -36,7 +23,24 @@ liste_actions = [
     "VLA.PA", "VPK.PA", "VRAP.PA", "WLN.PA", "XIL.PA"
 ]
 
-choix = st.selectbox("Choisissez une action à analyser :", sorted(liste_actions))
+# --- BLOC MODIFIÉ : GRAND BANDEAU GLOBAL EN COULEUR ---
+# On crée un conteneur HTML/CSS pour le fond et les textes fixes
+st.markdown(
+    """
+    <div style="background-color: #6B6B2F; padding: 30px; border-radius: 8px; margin-bottom: 20px; color: white; font-family: sans-serif;">
+        <h1 style="color: white; margin: 0 0 10px 0; font-size: 2.5rem;">📉 Mon Tableau de Bord PEA Professionnel</h1>
+        <p style="margin: 0 0 20px 0; font-size: 1.1rem; opacity: 0.9;">Sélectionnez une action pour analyser sa santé financière, sa valorisation et ses graphiques de tendance.</p>
+        <p style="margin: 0 0 5px 0; font-weight: bold; font-size: 1rem;">Choisissez une action à analyser :</p>
+    </div>
+    """, 
+    unsafe_allow_html=True
+)
+
+# On place le menu déroulant juste sous le texte d'instruction du bandeau
+choix = st.selectbox("", sorted(liste_actions), label_visibility="collapsed")
+
+# Petit espace visuel avant les onglets
+st.markdown("<br>", unsafe_allow_html=True)
 
 if choix:
     ticker = yf.Ticker(choix)
@@ -72,7 +76,6 @@ if choix:
     with tab2:
         st.header("🔑 Indicateurs Clés de Performance")
         
-        # Extraction des données financières
         prix = info.get("currentPrice", info.get("previousClose", "N/A"))
         per = info.get("trailingPE", "N/A")
         roe = info.get("returnOnEquity", None)
@@ -81,7 +84,6 @@ if choix:
         marge = info.get("profitMargins", None)
         beta = info.get("beta", "N/A")
         
-        # Calcul de la Capitalisation Boursière
         market_cap = info.get("marketCap", None)
         if market_cap and market_cap >= 1000000000:
             valeur_calculee = round(market_cap / 1000000000, 2)
@@ -100,7 +102,6 @@ if choix:
         if isinstance(psr, (int, float)): psr = round(psr, 2)
         if isinstance(beta, (int, float)): beta = round(beta, 2)
 
-        # Ligne 1 des Chiffres Clés
         col1, col2, col3 = st.columns(3)
         col1.metric("Prix Actuel", f"{prix} €" if prix != "N/A" else "N/A")
         col2.metric("PER (Valorisation)", f"{per}")
@@ -108,7 +109,6 @@ if choix:
         
         st.markdown("---")
         
-        # Ligne 2 des Chiffres Clés
         col4, col5, col6 = st.columns(3)
         col4.metric("Rendement Dividende", rendement_txt)
         col5.metric("Marge Bénéficiaire", marge_txt)
@@ -116,7 +116,6 @@ if choix:
         
         st.markdown("---")
         
-        # Ligne 3 
         col7, col8 = st.columns(2)
         col7.metric("Capitalisation Boursière (Taille)", market_cap_txt)
         col8.metric("Bêta (Volatilité)", f"{beta} (Marché = 1)")

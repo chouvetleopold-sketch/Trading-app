@@ -1,12 +1,15 @@
 import streamlit as st
 import yfinance as yf
 import pandas as pd
+import plotly.graph_objects as go
 
-# 1. Titre de l'application
-st.title("📊 Mon Tableau de Bord PEA Personnel")
-st.write("Sélectionnez une action pour voir sa santé financière, son activité et son actu.")
+# 1. Configuration de la page
+st.set_page_config(page_title="Tableau de Bord PEA", layout="wide")
 
-# --- LISTE COMPLÈTE DES 120 ACTIONS DU SBF 120 ---
+st.title("📊 Mon Tableau de Bord PEA Professionnel")
+st.write("Sélectionnez une action pour analyser sa santé financière, sa valorisation et ses graphiques de tendance.")
+
+# Liste complète des 120 actions du SBF 120
 liste_actions = [
     "AC.PA", "ACA.PA", "AI.PA", "AIR.PA", "ALD.PA", "ALO.PA", "ALT.PA", "AMUN.PA", "ATE.PA",
     "ATO.PA", "BALO.PA", "BAM.PA", "BBO.PA", "BCP.PA", "BEN.PA", "BIM.PA", "BNP.PA", "BOLL.PA", "BOUY.PA",
@@ -29,44 +32,122 @@ if choix:
     ticker = yf.Ticker(choix)
     info = ticker.info
     
-    # --- SECTION 1 : SYNTHÈSE DE L'ENTREPRISE ---
-    st.header(f"🏢 À propos de {info.get('longName', choix)}")
-    description = info.get("longBusinessSummary", "Aucune description disponible.")
-    st.write(description)
+    # Création des 3 onglets de navigation propres
+    tab1, tab2, tab3 = st.tabs(["🏢 Présentation & Actu", "📈 Analyse Financière", "📊 Graphiques Évolution"])
     
-    st.markdown("---")
-    
-    # --- SECTION 2 : LES CHIFFRES CLÉS ---
-    st.header("📈 Chiffres Clés & Algorithme")
-    
-    prix = info.get("currentPrice", info.get("previousClose", "N/A"))
-    per = info.get("trailingPE", "N/A")
-    roe = info.get("returnOnEquity", None)
-    roe_txt = f"{round(roe * 100, 2)}%" if roe else "N/A"
-    
-    # Arrondir proprement le PER s'il existe
-    if isinstance(per, (int, float)):
-        per = round(per, 2)
+    # ----------------------------------------------------
+    # ONGLET 1 : PRÉSENTATION & ACTUALITÉS
+    # ----------------------------------------------------
+    with tab1:
+        st.header(f"🏢 À propos de {info.get('longName', choix)}")
+        description = info.get("longBusinessSummary", "Aucune description disponible.")
+        st.write(description)
         
-    col1, col2, col3 = st.columns(3)
-    col1.metric("Prix Actuel", f"{prix} €" if prix != "N/A" else "N/A")
-    col2.metric("PER (Valorisation)", f"{per}")
-    col3.metric("ROE (Rentabilité)", roe_txt)
-    
-    st.markdown("---")
-    
-    # --- SECTION 3 : L'ACTUALITÉ DU TITRE ---
-    st.header("📰 Dernières Actualités")
-    nouvelles = ticker.news
-    
-    # On filtre pour afficher uniquement les actus qui ont un vrai titre
-    actus_valides = [n for n in nouvelles if n.get("title")] if nouvelles else []
-    
-    if actus_valides:
-        for new in actus_valides[:3]: # On affiche les 3 dernières vraies actus
-            st.subheader(new.get("title"))
-            source = new.get("publisher", "Inconnue")
-            lien = new.get("link", "#")
-            st.write(f"Source : {source} | [Lire l'article]({lien})")
-    else:
-        st.write("Aucune actualité récente disponible sur Yahoo Finance pour ce titre.")
+        st.markdown("---")
+        st.subheader("📰 Dernières Actualités du Titre")
+        nouvelles = ticker.news
+        actus_valides = [n for n in nouvelles if n.get("title")] if nouvelles else []
+        
+        if actus_valides:
+            for new in actus_valides[:3]:
+                st.write(f"**{new.get('title')}**")
+                st.write(f"Source : {new.get('publisher', 'Inconnue')} | [Lire l'article]({new.get('link', '#')})")
+                st.write("")
+        else:
+            st.write("Aucune actualité récente disponible.")
+
+    # ----------------------------------------------------
+    # ONGLET 2 : ANALYSE FINANCIÈRE AVANCÉE
+    # ----------------------------------------------------
+    with tab2:
+        st.header("🔑 Indicateurs Clés de Performance")
+        
+        # Extraction des données financières complexes
+        prix = info.get("currentPrice", info.get("previousClose", "N/A"))
+        per = info.get("trailingPE", "N/A")
+        roe = info.get("returnOnEquity", None)
+        rendement = info.get("dividendYield", None)
+        psr = info.get("priceToSalesTrailing12Months", "N/A")
+        marge = info.get("profitMargins", None)
+        beta = info.get("beta", "N/A")
+        
+        # Formater proprement les taux en pourcentages
+        roe_txt = f"{round(roe * 100, 2)}%" if roe else "N/A"
+        rendement_txt = f"{round(rendement * 100, 2)}%" if rendement else "0.00%"
+        marge_txt = f"{round(marge * 100, 2)}%" if marge else "N/A"
+        if isinstance(per, (int, float)): per = round(per, 2)
+        if isinstance(psr, (int, float)): psr = round(psr, 2)
+        if isinstance(beta, (int, float)): beta = round(beta, 2)
+
+        # Ligne 1 des Chiffres Clés (Les basiques)
+        col1, col2, col3 = st.columns(3)
+        col1.metric("Prix Actuel", f"{prix} €" if prix != "N/A" else "N/A")
+        col2.metric("PER (Valorisation)", f"{per}")
+        col3.metric("ROE (Rentabilité)", roe_txt)
+        
+        st.markdown("---")
+        
+        # Ligne 2 des Chiffres Clés (Les nouveautés pour le PEA)
+        col4, col5, col6 = st.columns(3)
+        col4.metric("Rendement Dividende", rendement_txt)
+        col5.metric("Marge Bénéficiaire", marge_txt)
+        col6.metric("Price-to-Sales (PSR)", f"{psr}")
+        
+        st.markdown("---")
+        st.metric("Bêta (Volatilité par rapport au marché)", f"{beta} (Stable si < 1, Nerveux si > 1)")
+
+    # ----------------------------------------------------
+    # ONGLET 3 : GRAPHIQUES INTERACTIFS
+    # ----------------------------------------------------
+    with tab3:
+        st.header("📈 Historique du Cours & Analyse Technique")
+        
+        # Bouton radio pour choisir la période du graphique
+        periode = st.radio("Sélectionnez la période historique :", ["1 mois", "1 an", "5 ans"], horizontal=True)
+        mapping_periode = {"1 mois": "1mo", "1 an": "1y", "5 ans": "5y"}
+        
+        # Téléchargement de l'historique sur la période choisie
+        historique = ticker.history(period=mapping_periode[periode])
+        
+        if not historique.empty:
+            # Calcul de la Moyenne Mobile à 200 jours si on a assez de données (sur 1 an ou 5 ans)
+            if periode in ["1 an", "5 ans"] and len(historique) >= 200:
+                historique['MA200'] = historique['Close'].rolling(window=200).mean()
+            else:
+                historique['MA200'] = None
+                
+            # Création du graphique Plotly
+            fig = go.Figure()
+            
+            # Courbe principale (Prix de clôture)
+            fig.add_trace(go.Scatter(
+                x=historique.index, 
+                y=historique['Close'], 
+                mode='lines', 
+                name='Prix de Clôture',
+                line=dict(color='#00b4d8', width=2)
+            ))
+            
+            # Courbe secondaire (Moyenne Mobile 200) s'il y a des données
+            if historique['MA200'].notna().any():
+                fig.add_trace(go.Scatter(
+                    x=historique.index, 
+                    y=historique['MA200'], 
+                    mode='lines', 
+                    name='Moyenne Mobile 200 jours',
+                    line=dict(color='#ff4d6d', width=1.5, dash='dash')
+                ))
+            
+            # Mise en page esthétique du graphique
+            fig.update_layout(
+                title=f"Évolution du cours - {info.get('longName', choix)}",
+                xaxis_title="Date",
+                yaxis_title="Prix (€)",
+                template="plotly_dark",
+                legend=dict(yanchor="top", y=0.99, xanchor="left", x=0.01)
+            )
+            
+            # Affichage du graphique interactif dans Streamlit
+            st.plotly_chart(fig, use_container_width=True)
+        else:
+            st.write("Impossible de charger les données graphiques pour cette action.")

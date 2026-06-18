@@ -71,10 +71,23 @@ if choix:
         marge = info.get("profitMargins", None)
         beta = info.get("beta", "N/A")
         
-        # Capitalisation Boursière
+        # Calcul simplifié de la Capitalisation Boursière
         market_cap = info.get("marketCap", None)
-        if market_cap:
-            if market_cap >= 1_000_000_000:
-                market_cap_txt = f"{round(market_cap / 1_000_000_000, 2)} Md €"
-            else:
-                market_cap_txt = f"{
+        if market_cap and market_cap >= 1000000000:
+            valeur_calculee = round(market_cap / 1000000000, 2)
+            market_cap_txt = str(valeur_calculee) + " Md €"
+        elif market_cap:
+            valeur_calculee = round(market_cap / 1000000, 2)
+            market_cap_txt = str(valeur_calculee) + " M €"
+        else:
+            market_cap_txt = "N/A"
+        
+        roe_txt = f"{round(roe * 100, 2)}%" if roe else "N/A"
+        rendement_txt = f"{round(rendement * 100, 2)}%" if rendement else "0.00%"
+        marge_txt = f"{round(marge * 100, 2)}%" if marge else "N/A"
+        
+        if isinstance(per, (int, float)): per = round(per, 2)
+        if isinstance(psr, (int, float)): psr = round(psr, 2)
+        if isinstance(beta, (int, float)): beta = round(beta, 2)
+
+        #

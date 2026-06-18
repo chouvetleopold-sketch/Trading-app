@@ -1,5 +1,4 @@
 # 1. Installation des outils nécessaires pour l'interface graphique
-!pip install streamlit yfinance pandas
 
 import streamlit as st
 import yfinance as yf

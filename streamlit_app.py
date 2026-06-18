@@ -6,38 +6,54 @@ import plotly.graph_objects as go
 # 1. Configuration de la page
 st.set_page_config(page_title="Tableau de Bord PEA", layout="wide")
 
-# Liste complète des 120 actions du SBF 120
-liste_actions = [
-    "AC.PA", "ACA.PA", "AI.PA", "AIR.PA", "ALD.PA", "ALO.PA", "ALT.PA", "AMUN.PA", "ATE.PA",
-    "ATO.PA", "BALO.PA", "BAM.PA", "BBO.PA", "BCP.PA", "BEN.PA", "BIM.PA", "BNP.PA", "BOLL.PA", "BOUY.PA",
-    "CAFP.PA", "CAP.PA", "CARA.PA", "CARR.PA", "CDI.PA", "CEG.PA", "CHG.PA", "CIE.PA", "COFA.PA", "COV.PA",
-    "CS.PA", "DBV.PA", "DEC.PA", "DERI.PA", "DFV.PA", "DG.PA", "DIM.PA", "DSY.PA", "EDEN.PA", "EDF.PA",
-    "EN.PA", "ENGI.PA", "ERA.PA", "ERI.PA", "ETL.PA", "EURA.PA", "EVO.PA", "FDJ.PA", "FR.PA", "FTI.PA",
-    "GFC.PA", "GLE.PA", "GTT.PA", "HO.PA", "ICAD.PA", "IDL.PA", "ILD.PA", "IMPL.PA", "INE.PA", "ING.PA",
-    "IPS.PA", "IPH.PA", "ITP.PA", "JCQ.PA", "KAF.PA", "KER.PA", "KEY.PA", "KOF.PA", "LI.PA", "LHN.PA",
-    "LNA.PA", "LR.PA", "MC.PA", "MERY.PA", "MF.PA", "MMB.PA", "MMT.PA", "NANO.PA", "NEX.PA", "NK.PA",
-    "NRO.PA", "NWY.PA", "OR.PA", "ORA.PA", "ORP.PA", "PEUG.PA", "POM.PA", "PUB.PA", "RCO.PA", "RE.PA",
-    "RHA.PA", "RI.PA", "RMS.PA", "RNO.PA", "RUN.PA", "SAF.PA", "SAN.PA", "SGO.PA", "SHL.PA", "SK.PA",
-    "SBT.PA", "SOI.PA", "SOM.PA", "SOP.PA", "SPIE.PA", "SQI.PA", "SU.PA", "SW.PA", "TEP.PA", "TFI.PA",
-    "TI.PA", "TRI.PA", "TTE.PA", "UBI.PA", "URW.PA", "VALL.PA", "VEO.PA", "VGO.PA", "VIE.PA", "VIV.PA",
-    "VLA.PA", "VPK.PA", "VRAP.PA", "WLN.PA", "XIL.PA"
-]
+# --- DICTIONNAIRE DE CORRESPONDANCE (NOM -> CODE YAHOO) ---
+# Nous associons le nom complet de l'entreprise à son symbole technique boursier
+dictionnaire_actions = {
+    "Accor": "AC.PA", "Crédit Agricole": "ACA.PA", "Air Liquide": "AI.PA", "Airbus": "AIR.PA", 
+    "Ayvens (ex-ALD)": "ALD.PA", "Alstom": "ALO.PA", "Alten": "ALT.PA", "Amundi": "AMUN.PA", 
+    "Alten (Alternative)": "ATE.PA", "Atos": "ATO.PA", "Bénéteau": "BALO.PA", "Basalt": "BAM.PA", 
+    "Bourbon": "BBO.PA", "BCP": "BCP.PA", "Beneteau (Alt)": "BEN.PA", "Bimin": "BIM.PA", 
+    "BNP Paribas": "BNP.PA", "Bolloré": "BOLL.PA", "Bouygues": "BOUY.PA", "Cafom": "CAFP.PA", 
+    "Capgemini": "CAP.PA", "Carat": "CARA.PA", "Carrefour": "CARR.PA", "Chantiers de l'Atlantique": "CDI.PA", 
+    "Cegid": "CEG.PA", "Chargeurs": "CHG.PA", "Cie des Alpes": "CIE.PA", "Coface": "COFA.PA", 
+    "Covivio": "COV.PA", "Compagnie des Signaux": "CS.PA", "DBV Technologies": "DBV.PA", 
+    "Decaux (JCDecaux)": "DEC.PA", "Derichebourg": "DERI.PA", "Française des Jeux (FDJ)": "FDJ.PA", 
+    "Vinci": "DG.PA", "Sartorius Stedim": "DIM.PA", "Dassault Systèmes": "DSY.PA", 
+    "Edenred": "EDEN.PA", "Eiffage": "EN.PA", "Engie": "ENGI.PA", "Eramet": "ERA.PA", 
+    "Eridania": "ERI.PA", "Eutelsat": "ETL.PA", "Eurazeo": "EURA.PA", "Evolog": "EVO.PA", 
+    "Gecina": "GFC.PA", "Société Générale": "GLE.PA", "GTT": "GTT.PA", "Thales": "HO.PA", 
+    "Icade": "ICAD.PA", "ID Logistics": "IDL.PA", "Iliad": "ILD.PA", "Imerys": "IMPL.PA", 
+    "Innelec": "INE.PA", "Ingenico": "ING.PA", "Ipsen": "IPS.PA", "Ipsos": "IPH.PA", 
+    "Interparfums": "ITP.PA", "JC Decaux (Alt)": "JCQ.PA", "Kaufman & Broad": "KAF.PA", 
+    "Kering": "KER.PA", "Keyrus": "KEY.PA", "Klepierre": "KOF.PA", "L'Oréal": "OR.PA", 
+    "Orange": "ORA.PA", "Orpea": "ORP.PA", "Publicis": "PUB.PA", "Rémy Cointreau": "RCO.PA", 
+    "Rexel": "RE.PA", "Rhodia": "RHA.PA", "Pernod Ricard": "RI.PA", "Hermès": "RMS.PA", 
+    "Renault": "RNO.PA", "Rubis": "RUN.PA", "Safran": "SAF.PA", "Sanofi": "SAN.PA", 
+    "Saint-Gobain": "SGO.PA", "Sartorius": "SHL.PA", "SEB": "SK.PA", "Soitec": "SOI.PA", 
+    "Somfy": "SOM.PA", "Sopra Steria": "SOP.PA", "Spie": "SPIE.PA", "Suez": "SU.PA", 
+    "Teleperformance": "TEP.PA", "TF1": "TFI.PA", "TotalEnergies": "TTE.PA", "Ubisoft": "UBI.PA", 
+    "Unibail-Rodamco-Westfield": "URW.PA", "Vallourec": "VALL.PA", "Veolia": "VEO.PA", 
+    "Virbac": "VGO.PA", "Vivendi": "VIV.PA", "Valneva": "VLA.PA", "Vicat": "VPK.PA", 
+    "Worldline": "WLN.PA", "LVMH": "MC.PA"
+}
 
-# --- BLOC MODIFIÉ : GRAND BANDEAU GLOBAL EN COULEUR ---
-# On crée un conteneur HTML/CSS pour le fond et les textes fixes
+# --- BLOC : GRAND BANDEAU GLOBAL EN COULEUR ---
 st.markdown(
     """
     <div style="background-color: #6B6B2F; padding: 30px; border-radius: 8px; margin-bottom: 20px; color: white; font-family: sans-serif;">
         <h1 style="color: white; margin: 0 0 10px 0; font-size: 2.5rem;">📉 Mon Tableau de Bord PEA Professionnel</h1>
         <p style="margin: 0 0 20px 0; font-size: 1.1rem; opacity: 0.9;">Sélectionnez une action pour analyser sa santé financière, sa valorisation et ses graphiques de tendance.</p>
-        <p style="margin: 0 0 5px 0; font-weight: bold; font-size: 1rem;">Choisissez une action à analyser :</p>
+        <p style="margin: 0 0 5px 0; font-weight: bold; font-size: 1rem;">Choisissez une entreprise à analyser :</p>
     </div>
     """, 
     unsafe_allow_html=True
 )
 
-# On place le menu déroulant juste sous le texte d'instruction du bandeau
-choix = st.selectbox("", sorted(liste_actions), label_visibility="collapsed")
+# Le menu déroulant affiche les NOMS (les clés du dictionnaire) triés par ordre alphabétique
+nom_selectionne = st.selectbox("", sorted(dictionnaire_actions.keys()), label_visibility="collapsed")
+
+# On récupère le CODE associé au NOM sélectionné pour l'analyse
+choix = dictionnaire_actions[nom_selectionne]
 
 # Petit espace visuel avant les onglets
 st.markdown("<br>", unsafe_allow_html=True)
@@ -53,7 +69,7 @@ if choix:
     # ONGLET 1 : PRÉSENTATION & ACTUALITÉS
     # ----------------------------------------------------
     with tab1:
-        st.header(f"🏢 À propos de {info.get('longName', choix)}")
+        st.header(f"🏢 À propos de {info.get('longName', nom_selectionne)}")
         description = info.get("longBusinessSummary", "Aucune description disponible.")
         st.write(description)
         
@@ -157,7 +173,7 @@ if choix:
                 ))
             
             fig.update_layout(
-                title=f"Évolution du cours - {info.get('longName', choix)}",
+                title=f"Évolution du cours - {nom_selectionne}",
                 xaxis_title="Date",
                 yaxis_title="Prix (€)",
                 template="plotly_dark",

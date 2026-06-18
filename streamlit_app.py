@@ -18,10 +18,10 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-# Remplacement du menu déroulant par une zone de saisie de texte libre (LVMH par défaut)
+# Zone de saisie de texte libre (LVMH 'MC.PA' par défaut)
 choix = st.text_input("", value="MC.PA", label_visibility="collapsed").strip().upper()
 
-# Petit guide d'aide pour l'utilisateur sous la barre de recherche
+# Guide d'aide pour l'utilisateur sous la barre de recherche
 st.caption("💡 *Exemples de codes à taper : **MC.PA** (LVMH), **TTE.PA** (Total), **STMMI.MI** (STMicroelectronics), **AIR.DE** (Airbus), **ASML.AS** (ASML)*")
 
 st.markdown("<br>", unsafe_allow_html=True)
@@ -31,8 +31,8 @@ if choix:
         ticker = yf.Ticker(choix)
         info = ticker.info
         
-        # Vérification si le ticker existe vraiment et renvoie des données
-        if not info or 'regularMarketPrice' not def and 'currentPrice' not in info and 'previousClose' not in info:
+        # LIGNE CORRIGÉE : Vérification robuste de l'existence du symbole
+        if not info or not any(k in info for k in ['regularMarketPrice', 'currentPrice', 'previousClose', 'longName']):
             st.error(f"❌ Le symbole boursier '{choix}' semble incorrect ou n'existe pas sur Yahoo Finance. Vérifiez le suffixe (ex: .PA, .MI, .DE).")
         else:
             # Nom de l'action pour l'affichage

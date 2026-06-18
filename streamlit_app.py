@@ -7,7 +7,7 @@ import numpy as np
 # 1. Configuration de la page
 st.set_page_config(page_title="Tableau de Bord PEA", layout="wide")
 
-# --- FONCTION COMPLÉMENTAIRE : CALCUL DU RSI ---
+# --- FONCTION : CALCUL DU RSI ---
 def calculer_rsi(data, periods=14):
     close_delta = data['Close'].diff()
     up = close_delta.clip(lower=0)
@@ -18,10 +18,9 @@ def calculer_rsi(data, periods=14):
     rsi = 100 - (100 / (1 + rsi))
     return rsi.iloc[-1] if not rsi.empty else 50
 
-# --- FONCTION POUR LE MOMENTUM (ANALYSES DES LEAVERS) ---
-@st.cache_data(ttl=3600) # Garde en mémoire pendant 1h pour éviter de ralentir l'application
+# --- FONCTION POUR LE MOMENTUM ET LA VALORISATION (MIS À JOUR) ---
+@st.cache_data(ttl=3600)
 def obtenir_top_momentum():
-    # Sélection de quelques grandes actions européennes de référence éligibles PEA
     actions_test = {
         "LVMH": "MC.PA", "TotalEnergies": "TTE.PA", "Air Liquide": "AI.PA", 
         "Schneider Electric": "SU.PA", "Sanofi": "SAN.PA", "Airbus": "AIR.DE",
@@ -33,7 +32,9 @@ def obtenir_top_momentum():
     for nom, ticker_code in actions_test.items():
         try:
             t = yf.Ticker(ticker_code)
+            info = t.info
             hist = t.history(period="1y")
+            
             if len(hist) > 200:
                 prix_actuel = hist['Close'].iloc[-1]
                 prix_an_dernier = hist['Close'].iloc[0]
@@ -44,7 +45,28 @@ def obtenir_top_momentum():
                 
                 rsi_actuel = calculer_rsi(hist)
                 
-                # Évaluation de l'élan globale
+                # --- CALCUL DE L'ÉVALUATION FINANCIÈRE ---
+                per_actuel = info.get("trailingPE", None)
+                per_moyen_5ans = info.get("fiveYearAvgTrailingPE", None)
+                
+                if per_actuel and per_moyen_5ans:
+                    # Règle de comparaison PER actuel vs Moyenne 5 ans
+                    ratio_val = per_actuel / per_moyen_5ans
+                    if ratio_val < 0.85:
+                        evaluation = "🟢 Sous-évalué (Décote)"
+                    elif ratio_val > 1.15:
+                        evaluation = "🔴 Surévalué (Cher)"
+                    else:
+                        evaluation = "🟡 Prix Juste"
+                elif per_actuel:
+                    # Secours si la moyenne 5 ans n'est pas dispo
+                    if per_actuel < 13: evaluation = "🟢 Sous-évalué (PER bas)"
+                    elif per_actuel > 25: evaluation = "🔴 Surévalué (PER haut)"
+                    else: evaluation = "🟡 Prix Juste"
+                else:
+                    evaluation = "📊 N/A (Pas de PER)"
+                
+                # Diagnostic d'élan technique
                 if perf_1an > 10 and prix_actuel > ma200 and 50 <= rsi_actuel <= 75:
                     elan = "🔥 Fort & Sain"
                 elif perf_1an > 20 and rsi_actuel > 75:
@@ -59,8 +81,9 @@ def obtenir_top_momentum():
                     "Code": ticker_code,
                     "Prix Actuel (€)": round(prix_actuel, 2),
                     "Perf. 1 An": f"{round(perf_1an, 2)}%",
-                    "Tendance Long Terme (MA200)": au_dessus_ma200,
+                    "Tendance (MA200)": au_dessus_ma200,
                     "RSI (Force 14j)": round(rsi_actuel, 1),
+                    "Évaluation Financière": evaluation,
                     "Diagnostic Élan": elan
                 })
         except:
@@ -76,13 +99,12 @@ st.markdown(
     """
     <div style="background-color: #6B6B2F; padding: 30px; border-radius: 8px; margin-bottom: 20px; color: white; font-family: sans-serif;">
         <h1 style="color: white; margin: 0 0 10px 0; font-size: 2.5rem;">📉 Mon Grand Moteur de Recherche Boursier</h1>
-        <p style="margin: 0 0 20px 0; font-size: 1.1rem; opacity: 0.9;">Analysez une action par son nom ou découvrez les entreprises avec le meilleur élan boursier.</p>
+        <p style="margin: 0 0 20px 0; font-size: 1.1rem; opacity: 0.9;">Analysez une action par son nom ou découvrez la santé financière et l'élan des marchés.</p>
     </div>
     """, 
     unsafe_allow_html=True
 )
 
-# CRÉATION DES ONGLETS PRINCIPAUX (Recherche vs Découverte Globale)
 onglet_principal_1, onglet_principal_2 = st.tabs(["🔍 Rechercher une entreprise", "🚀 Découverte & Momentum Européen"])
 
 # ====================================================================
@@ -174,24 +196,23 @@ with onglet_principal_1:
                     with tab4:
                         st.header("📖 Lexique")
                         st.write("**PER :** Coefficient de valorisation boursière.")
-                        st.write("**ROE :** Rentabilité de l'argent investi par les actionnaires.")
-                        st.write("**RSI :** Indicateur de la force et de la vitesse des mouvements de prix.")
+                        st.write("**ROE :** Rentabilité des capitaux propres.")
+                        st.write("**RSI :** Indicateur de la force des mouvements de prix.")
 
         except Exception as e:
             st.error(f"Erreur lors de la recherche : {e}")
 
 # ====================================================================
-# ONGLET PRINCIPAL 2 : ANALYSE DU MOMENTUM (NOUVEAUTÉ)
+# ONGLET PRINCIPAL 2 : ANALYSE DU MOMENTUM & VALORISATION
 # ====================================================================
 with onglet_principal_2:
-    st.header("🚀 Tableau de Suivi de l'Élan Boursier (Momentum)")
-    st.write("Ce tableau analyse en temps réel les indicateurs d'élan d'un panier d'actions européennes majeures éligibles au PEA.")
+    st.header("🚀 Suivi de l'Élan & de la Valorisation Financière")
+    st.write("Ce tableau croise en direct les indicateurs techniques d'élan (RSI) et les indicateurs fondamentaux de valeur (PER).")
     
-    with st.spinner("Analyse et calcul des indicateurs techniques en direct..."):
+    with st.spinner("Analyse et calcul des algorithmes financiers en direct..."):
         df_momentum = obtenir_top_momentum()
         
     if not df_momentum.empty:
-        # Affichage du tableau de bord propre
         st.dataframe(
             df_momentum, 
             column_config={
@@ -202,12 +223,13 @@ with onglet_principal_2:
             use_container_width=True
         )
         
-        # Guide d'aide à la lecture sous le tableau
         st.markdown("""
-        ### 💡 Comment interpréter les points d'analyse importants ?
-        * **Diagnostic '🔥 Fort & Sain' :** L'action progresse régulièrement sur 1 an, se situe au-dessus de sa moyenne long terme (MA200) et son RSI est équilibré (entre 50 et 75). C'est un élan haussier robuste.
-        * **Diagnostic '⚠️ Surchauffe' :** L'action a grimpé très (ou trop) vite. Son RSI dépasse 75, ce qui montre une situation de surachat à court terme. Attention aux risques de consolidation.
-        * **RSI (Relative Strength Index) :** Plus la jauge est remplie (proche de 70-100), plus la pression acheteuse est puissante. S'il tombe sous 30, l'action subit une forte baisse.
+        ### 💡 Comment utiliser ce tableau pour vos choix PEA ?
+        Le scénario idéal pour un investisseur de type **"Value / Growth"** (Achat de croissance à prix raisonnable) est de chercher des lignes combinant :
+        1. Un diagnostic d'élan **🔥 Fort & Sain** (l'action monte, elle est aimée du marché).
+        2. Une évaluation financière **🟢 Sous-évalué** ou **🟡 Prix Juste** (l'action n'est pas encore trop chère par rapport à son histoire).
+        
+        *A contrario*, une ligne en **⚠️ Surchauffe** et **🔴 Surévalué** indique un risque important de baisse à court terme (prise de bénéfices des marchés).
         """)
     else:
-        st.warning("Impossible de charger le tableau de momentum pour le moment.")
+        st.warning("Impossible de charger le tableau de bord.")

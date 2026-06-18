@@ -32,7 +32,7 @@ if choix:
     ticker = yf.Ticker(choix)
     info = ticker.info
     
-    # AJOUT DE L'ONGLET LEXIQUE DANS LES TABS
+    # Les 4 onglets de navigation
     tab1, tab2, tab3, tab4 = st.tabs(["🏢 Présentation & Actu", "📈 Analyse Financière", "📊 Graphiques Évolution", "📖 Lexique"])
     
     # ----------------------------------------------------
@@ -57,7 +57,7 @@ if choix:
             st.write("Aucune actualité récente disponible.")
 
     # ----------------------------------------------------
-    # ONGLET 2 : ANALYSE FINANCIÈRE AVANCÉE (MODIFIÉ)
+    # ONGLET 2 : ANALYSE FINANCIÈRE AVANCÉE
     # ----------------------------------------------------
     with tab2:
         st.header("🔑 Indicateurs Clés de Performance")
@@ -71,7 +71,7 @@ if choix:
         marge = info.get("profitMargins", None)
         beta = info.get("beta", "N/A")
         
-        # --- BLOC AJOUTÉ : Capitalisation Boursière ---
+        # Capitalisation Boursière
         market_cap = info.get("marketCap", None)
         if market_cap:
             if market_cap >= 1_000_000_000:
@@ -81,10 +81,11 @@ if choix:
         else:
             market_cap_txt = "N/A"
         
-        # Formater proprement les taux en pourcentages
+        # --- LIGNE CORRIGÉE ICI ---
         roe_txt = f"{round(roe * 100, 2)}%" if roe else "N/A"
-        rendement_txt = f"{round(rendement * 100, 2)}%" if rendimiento else "0.00%"
+        rendement_txt = f"{round(rendement * 100, 2)}%" if rendement else "0.00%"
         marge_txt = f"{round(marge * 100, 2)}%" if marge else "N/A"
+        
         if isinstance(per, (int, float)): per = round(per, 2)
         if isinstance(psr, (int, float)): psr = round(psr, 2)
         if isinstance(beta, (int, float)): beta = round(beta, 2)
@@ -105,7 +106,7 @@ if choix:
         
         st.markdown("---")
         
-        # Ligne 3 (Ajout de la capitalisation à côté du Bêta)
+        # Ligne 3 
         col7, col8 = st.columns(2)
         col7.metric("Capitalisation Boursière (Taille)", market_cap_txt)
         col8.metric("Bêta (Volatilité)", f"{beta} (Marché = 1)")
@@ -125,4 +126,58 @@ if choix:
             if periode in ["1 an", "5 ans"] and len(historique) >= 200:
                 historique['MA200'] = historique['Close'].rolling(window=200).mean()
             else:
-                historique['MA200']
+                historique['MA200'] = None
+                
+            fig = go.Figure()
+            
+            fig.add_trace(go.Scatter(
+                x=historique.index, 
+                y=historique['Close'], 
+                mode='lines', 
+                name='Prix de Clôture',
+                line=dict(color='#00b4d8', width=2)
+            ))
+            
+            if historique['MA200'].notna().any():
+                fig.add_trace(go.Scatter(
+                    x=historique.index, 
+                    y=historique['MA200'], 
+                    mode='lines', 
+                    name='Moyenne Mobile 200 jours',
+                    line=dict(color='#ff4d6d', width=1.5, dash='dash')
+                ))
+            
+            fig.update_layout(
+                title=f"Évolution du cours - {info.get('longName', choix)}",
+                xaxis_title="Date",
+                yaxis_title="Prix (€)",
+                template="plotly_dark",
+                legend=dict(yanchor="top", y=0.99, xanchor="left", x=0.01)
+            )
+            
+            st.plotly_chart(fig, use_container_width=True)
+        else:
+            st.write("Impossible de charger les données graphiques pour cette action.")
+
+    # ----------------------------------------------------
+    # ONGLET 4 : LEXIQUE DU LANGAGE FINANCIER
+    # ----------------------------------------------------
+    with tab4:
+        st.header("📖 Lexique pour comprendre les indicateurs")
+        st.write("Voici l'explication simple de toutes les métriques affichées dans l'onglet Analyse Financière :")
+        
+        st.subheader("🔹 PER (Price Earnings Ratio)")
+        st.write("**Ce que c'est :** Le coefficient de valorisation de l'entreprise.")
+        st.write("**Comment l'interpréter :** Il indique combien de fois vous payez le bénéfice annuel de l'entreprise en achetant l'action. Un PER de 15 signifie que l'action s'achète 15 fois son bénéfice. S'il est très élevé (ex: > 30), l'action est jugée chère. S'il est bas, elle peut être sous-évaluée.")
+        
+        st.subheader("🔹 ROE (Return on Equity)")
+        st.write("**Ce que c'est :** La rentabilité des capitaux propres.")
+        st.write("**Comment l'interpréter :** Il mesure l'efficacité avec laquelle l'entreprise utilise l'argent de ses actionnaires pour générer du profit. Un ROE supérieur à 12-15% est le signe d'une entreprise très performante financièrement.")
+        
+        st.subheader("🔹 Rendement du Dividende")
+        st.write("**Ce que c'est :** Le pourcentage de gain annuel versé par l'entreprise sous forme de cash.")
+        st.write("**Comment l'interpréter :** Si le rendement est de 4%, cela signifie que pour 100€ investis, l'entreprise vous reverse 4€ chaque année, indépendamment des variations de l'action. Idéal pour une stratégie de revenus passifs dans un PEA.")
+        
+        st.subheader("🔹 Marge Bénéficiaire")
+        st.write("**Ce que c'est :** Le pourcentage du chiffre d'affaires qui se transforme en bénéfice net.")
+        st.write("**

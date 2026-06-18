@@ -6,135 +6,83 @@ import plotly.graph_objects as go
 # 1. Configuration de la page
 st.set_page_config(page_title="Tableau de Bord PEA", layout="wide")
 
-# --- DICTIONNAIRE EUROPÉEN COMPLET ÉLIGIBLE PEA ---
-dictionnaire_actions = {
-    # --- GÉANTS ET GRANDES CAPITALISATIONS EUROPÉENNES (HORS PUREMENT FR) ---
-    "Airbus (Aéronautique)": "AIR.DE",
-    "ASML Holding (Semi-conducteurs - Pays-Bas)": "ASML.AS",
-    "BMW (Automobile - Allemagne)": "BMW.DE",
-    "Enel (Énergie - Italie)": "ENEL.MI",
-    "Ferrari (Automobile - Italie)": "RACE.MI",
-    "Iberdrola (Énergie - Espagne)": "IBE.MC",
-    "Inditex / Zara (Prêt-à-porter - Espagne)": "ITX.MC",
-    "Infineon Technologies (Semi-conducteurs - Allemagne)": "IFX.DE",
-    "Intesa Sanpaolo (Banque - Italie)": "ISP.MI",
-    "Mercedes-Benz Group (Automobile - Allemagne)": "MBG.DE",
-    "SAP (Logiciels - Allemagne)": "SAP.DE",
-    "Stellantis (Automobile - Italie/Pays-Bas)": "STLAM.MI",
-    "STMicroelectronics (Semi-conducteurs - Franco-Italien)": "STMMI.MI",
-    "Unicredit (Banque - Italie)": "UCG.MI",
-    "Volkswagen (Automobile - Allemagne)": "VOW3.DE",
+# --- FONCTION MAGIQUE : CHARGEMENT DE TOUTES LES ACTIONS DEPUIS WIKIPÉDIA ---
+@st.cache_data # Cette ligne évite de recharger Wikipédia à chaque clic (gain de vitesse)
+def charger_toutes_les_actions_europe():
+    actions = {}
     
-    # --- GRANDES VALEURS FRANÇAISES (SBF 120 / CAC 40) ---
-    "Accor": "AC.PA", 
-    "Aéroports de Paris (ADP)": "ADP.PA",
-    "Air Liquide": "AI.PA", 
-    "Air France-KLM": "AF.PA",
-    "Alstom": "ALO.PA", 
-    "Alten": "ATE.PA", 
-    "Amundi": "AMUN.PA", 
-    "Arkema": "AKE.PA",
-    "Atos": "ATO.PA", 
-    "AXA (Assurance)": "CS.PA",
-    "Bénéteau": "BEN.PA", 
-    "BNP Paribas": "BNP.PA", 
-    "Bolloré": "BOLL.PA", 
-    "Bouygues": "BOUY.PA", 
-    "Bureau Veritas": "BVI.PA",
-    "Capgemini": "CAP.PA", 
-    "Carrefour": "CARR.PA", 
-    "Coface": "COFA.PA", 
-    "Covivio": "COV.PA", 
-    "Crédit Agricole": "ACA.PA", 
-    "Danone": "BN.PA", 
-    "Dassault Systèmes": "DSY.PA", 
-    "Derichebourg": "DERI.PA", 
-    "Edenred": "EDEN.PA", 
-    "Eiffage": "FGR.PA", 
-    "Engie": "ENGI.PA", 
-    "Eramet": "ERA.PA", 
-    "Eurofins Scientific": "ERF.PA",
-    "Eutelsat": "ETL.PA", 
-    "Eurazeo": "RF.PA", 
-    "Forvia (ex-Faurecia)": "FRVIA.PA",
-    "Française des Jeux (FDJ)": "FDJ.PA", 
-    "Gecina": "GFC.PA", 
-    "GTT": "GTT.PA", 
-    "Hermès International": "RMS.PA", 
-    "Icade": "ICAD.PA", 
-    "ID Logistics": "IDL.PA", 
-    "Imerys": "NK.PA", 
-    "Interparfums": "ITP.PA", 
-    "Ipsen": "IPN.PA", 
-    "Ipsos": "IPS.PA", 
-    "JCDecaux": "DEC.PA",
-    "Kering (Gucci, Yves Saint Laurent)": "KER.PA", 
-    "Klepierre": "LI.PA", 
-    "Legrand": "LR.PA",
-    "L'Oréal": "OR.PA", 
-    "LVMH (Louis Vuitton, Moët Hennessy)": "MC.PA", 
-    "Michelin": "ML.PA",
-    "Nexa": "NEX.PA",
-    "Orange": "ORA.PA", 
-    "Pernod Ricard": "RI.PA", 
-    "Publicis Groupe": "PUB.PA", 
-    "Rémy Cointreau": "RCO.PA", 
-    "Renault": "RNO.PA", 
-    "Rexel": "RXG.PA", 
-    "Rubis": "RUI.PA", 
-    "Safran": "SAF.PA", 
-    "Saint-Gobain": "SGO.PA", 
-    "Sanofi": "SAN.PA", 
-    "Sartorius Stedim Biotech": "DIM.PA", 
-    "Schneider Electric": "SU.PA",
-    "SEB": "SK.PA", 
-    "Sodexo": "SW.PA",
-    "Soitec": "SOI.PA", 
-    "Sopra Steria": "SOP.PA", 
-    "Spie": "SPIE.PA", 
-    "Teleperformance": "TEP.PA", 
-    "TF1": "TFI.PA", 
-    "Thales": "HO.PA", 
-    "TotalEnergies": "TTE.PA", 
-    "Trigano": "TRI.PA",
-    "Ubisoft Entertainment": "UBI.PA", 
-    "Unibail-Rodamco-Westfield": "URW.PA", 
-    "Valeo": "FR.PA",
-    "Vallourec": "VK.PA", 
-    "Valneva": "VLA.PA", 
-    "Veolia Environnement": "VIE.PA", 
-    "Vicat": "VCT.PA",
-    "Virbac": "VIRP.PA",
-    "Vivendi": "VIV.PA", 
-    "Worldline": "WLN.PA"
-}
+    # Récupération du CAC 40 + CAC Next 20 (60 entreprises françaises)
+    try:
+        url_fr = "https://en.wikipedia.org/wiki/CAC_Large_60"
+        tables_fr = pd.read_html(url_fr)
+        df_fr = tables_fr[2] # Récupère le tableau des entreprises
+        for _, row in df_fr.iterrows():
+            nom = row['Company']
+            ticker = row['Ticker']
+            # On s'assure que le ticker se termine bien par .PA pour Yahoo France
+            if not ticker.endswith('.PA'):
+                ticker = f"{ticker}.PA"
+            actions[f"🇫🇷 {nom}"] = ticker
+    except Exception:
+        pass # Si Wikipédia bloque temporairement, on continue
+
+    # Récupération des principaux géants européens (Euro Stoxx 50)
+    try:
+        url_eu = "https://en.wikipedia.org/wiki/Euro_Stoxx_50"
+        tables_eu = pd.read_html(url_eu)
+        df_eu = tables_eu[4] # Récupère le tableau européen
+        for _, row in df_eu.iterrows():
+            nom = row['Name']
+            ticker = row['Ticker']
+            secteur = row['Sector']
+            # Conversion des tickers pour Yahoo Finance (ex: ASML.AS, SAP.DE...)
+            if "ASML" in ticker: ticker = "ASML.AS"
+            elif "SAP" in ticker: ticker = "SAP.DE"
+            elif "BMW" in ticker: ticker = "BMW.DE"
+            elif "MBG" in ticker: ticker = "MBG.DE"
+            elif "RACE" in ticker: ticker = "RACE.MI"
+            elif "STLAM" in ticker: ticker = "STLAM.MI"
+            elif "STMPA" in ticker or "STM" in ticker: ticker = "STMMI.MI"
+            elif "AIR" in ticker: ticker = "AIR.DE"
+            
+            actions[f"🇪🇺 {nom} ({secteur})"] = ticker
+    except Exception:
+        pass
+
+    # Ajout manuel de secours si les codes européens ont des suffixes exotiques
+    actions["🇪🇺 ASML Holding (Semi-conducteurs)"] = "ASML.AS"
+    actions["🇪🇺 SAP (Logiciels)"] = "SAP.DE"
+    actions["🇪🇺 Ferrari (Automobile)"] = "RACE.MI"
+    actions["🇪🇺 Stellantis (Automobile)"] = "STLAM.MI"
+    actions["🇪🇺 STMicroelectronics (Semi-conducteurs)"] = "STMMI.MI"
+    
+    return actions
+
+# Lancement de la fonction automatique
+dictionnaire_actions = charger_toutes_les_actions_europe()
 
 # --- BLOC : GRAND BANDEAU GLOBAL EN COULEUR ---
 st.markdown(
     """
     <div style="background-color: #6B6B2F; padding: 30px; border-radius: 8px; margin-bottom: 20px; color: white; font-family: sans-serif;">
-        <h1 style="color: white; margin: 0 0 10px 0; font-size: 2.5rem;">📉 Mon Tableau de Bord PEA Professionnel</h1>
-        <p style="margin: 0 0 20px 0; font-size: 1.1rem; opacity: 0.9;">Sélectionnez une action pour analyser sa santé financière, sa valorisation et ses graphiques de tendance.</p>
-        <p style="margin: 0 0 5px 0; font-weight: bold; font-size: 1rem;">Choisissez une entreprise européenne (Éligible PEA) à analyser :</p>
+        <h1 style="color: white; margin: 0 0 10px 0; font-size: 2.5rem;">📉 Mon Moteur d'Analyse PEA Global</h1>
+        <p style="margin: 0 0 20px 0; font-size: 1.1rem; opacity: 0.9;">Sélectionnez une action. La liste est automatiquement extraite des grands indices européens en direct.</p>
+        <p style="margin: 0 0 5px 0; font-weight: bold; font-size: 1rem;">Choisissez une entreprise parmi les grandes valeurs européennes disponibles :</p>
     </div>
     """, 
     unsafe_allow_html=True
 )
 
-# Le menu déroulant affiche les NOMS triés par ordre alphabétique
+# Le menu déroulant affiche désormais TOUTES les actions trouvées dynamiquement
 nom_selectionne = st.selectbox("", sorted(dictionnaire_actions.keys()), label_visibility="collapsed")
-
-# Récupération du CODE boursier associé
 choix = dictionnaire_actions[nom_selectionne]
 
-# Espace visuel
 st.markdown("<br>", unsafe_allow_html=True)
 
 if choix:
     ticker = yf.Ticker(choix)
     info = ticker.info
     
-    # Onglets
     tab1, tab2, tab3, tab4 = st.tabs(["🏢 Présentation & Actu", "📈 Analyse Financière", "📊 Graphiques Évolution", "📖 Lexique"])
     
     # 1. ONGLET PRÉSENTATION
